@@ -1,0 +1,243 @@
+import random
+import pandas as pd
+
+# ********************************************
+# Control most of the variables from these
+# ********************************************
+row_Num = 500000  # how many total rows there are in the extract
+rev_Split = 0.25  # how many of these rows are going to be for rev
+cogs_Split = 0.20  # how many of these rows are going to be for cogs
+opex_split = 0.55  # how many of these rows are going to be for opex
+horizontal_randomization = [0.3,0.4,0.5,0.6,0.7,0.8,0.9]  # further randomization across periods
+vertical_randomization = [.65,.70,.75,.80,.85,.90,.95]  # further randomization across accounts
+rev_rows = round(row_Num * rev_Split,0)
+cogs_Rows = round(row_Num * cogs_Split,0)
+opex_Rows = round(row_Num * opex_split,0)
+operating_Year = 2023  # Change the operating year
+download_Location = 'C:/Users/haroo/OneDrive/Documents/Price Scraping Project/Sample GL Extracts'  # change location if needed
+csv_filename =f"{operating_Year} Sample GL_Exract"
+
+GL_Extract =[]
+
+#define dimensions
+Dimensions = [
+    '_Account', '_Entity', '_Department', '_Placeholder 1', '_Placeholder 2', '_Placeholder 3', '_Placeholder 4','_Year' ,
+    '_Period', '_Scenario', '_Currency', '_Measure', '_Value'
+]
+#Define chart of accounts
+revenue_Accounts = [4000,4010,4020]
+SRDRevenue_Account = [4100]
+cogs_Accounts = [5000,5010,5020]
+opex_Accounts = [6000,6010,6020,6030,6040,6050,6060,6070,6080,6090,6100,6110,6120,6130,6140,6150,6160,6170,6180,6190,6200]
+other_Accounts = [7000,7010,7020,7030,7040]
+tax_Accounts = [8000,8010,8020]
+current_asset_accounts = [1000, 1100, 1110, 1200, 1300, 1400, 1410]
+Longterm_asset_accounts = [1500, 1600]
+Dep_Accounts =[1510,1610]
+current_liab_accounts = [2000,2100,2200]
+long_term_liab_accounts = [2300]
+retained_earnings_accounts = [3000]
+
+#Define entities
+entities = ['ABC','DEF','GHI']
+
+#Define Departments
+departments = [10,20,30,40,50,60,70]
+
+#Define Periods
+operating_periods = list(range(1,13))
+adjustment_periods = [1,2,3,4,5,6,7,8,9,10,11,12]
+
+#create random Accounts and append to the account dimension
+
+def generate_pl_accounts():
+    for account in range(row_Num):
+        accounts = random.choice(revenue_Accounts + cogs_Accounts + opex_Accounts + other_Accounts + tax_Accounts)
+        entity = random.choice(entities)
+        department = random.choice(departments)
+        year = operating_Year
+        placeholder1 = 'Undefined'
+        placeholder2 = 'Undefined'
+        placeholder3 = 'Undefined'
+        placeholder4 = 'Undefined'
+        periods = random.choice(operating_periods)
+        measure ='Value'
+        currency = 'Local'
+        scenario = 'Actual'
+        value = round(random.uniform(0,100000))
+
+        if accounts in cogs_Accounts:
+            value = round(random.uniform(0, 100000) * 0.7)
+        elif accounts in opex_Accounts:
+            value = round(random.uniform(0, 100000) * 0.01)
+        elif accounts in other_Accounts:
+            value = round(random.uniform(0, 100000) * 0.001)
+        elif accounts in tax_Accounts:
+            value = round(random.uniform(0, 100000) * 0.001)
+        else:
+            value = round(random.uniform(0, 100000))
+
+
+        gl_table = {
+            '_Account': accounts,
+            '_Entity':entity,
+            '_Department':department,
+            '_Placeholder 1': placeholder1,
+            '_Placeholder 2': placeholder2,
+            '_Placeholder 3': placeholder3,
+            '_Placeholder 4': placeholder4,
+            '_Year': year,
+            '_Period': periods,
+            '_Scenario': scenario,
+            '_Currency': currency,
+            '_Measure': measure,
+            '_Value':value
+
+        }
+
+        GL_Extract.append(gl_table)
+
+generate_pl_accounts()
+
+def PL_randomization():
+    selected_Periods = random.sample(adjustment_periods,6)
+
+
+    for account in GL_Extract:
+        if account['_Period'] in selected_Periods:
+            account['_Value'] = round(account['_Value']* random.choice(horizontal_randomization))
+    #return GL_Extract
+
+PL_randomization()
+
+def PL_randomization_two():
+    full_COA = revenue_Accounts + cogs_Accounts + opex_Accounts + other_Accounts + tax_Accounts
+    random_Account_Count = round(random.uniform(0, .99) * len(full_COA))
+    selected_Accounts = random.sample(full_COA,random_Account_Count)
+
+    for account in GL_Extract:
+        if account['_Account'] in selected_Accounts:
+            account['_Value'] = round(account['_Value'] * random.choice(vertical_randomization))
+    #return GL_Extract
+
+PL_randomization_two()
+
+def PL_revenue_normalization():
+    revenue_Account = 4020
+
+    for account in GL_Extract:
+        if account['_Account'] == revenue_Account:
+            account['_Value'] = round(account['_Value'] * .50)
+    #return GL_Extract
+
+PL_revenue_normalization()
+
+def PL_opex_normalization():
+    opex_random_Account = [6040, 6050, 6060, 6070, 6080, 6090, 6100]
+
+    for account in GL_Extract:
+        if account['_Account'] in opex_random_Account:
+            account['_Value'] = round(account['_Value'] * .30)
+    #return GL_Extract
+
+PL_opex_normalization()
+
+def PL_otheraccounts_normalization():
+    other_random_Account = [6110, 6120, 6130, 6140, 6150, 6160, 6170, 6180, 6190, 6200]
+
+    for account in GL_Extract:
+        if account['_Account'] in other_random_Account:
+            account['_Value'] = round(account['_Value'] * .10)
+    #return GL_Extract
+
+PL_otheraccounts_normalization()
+
+# Create Sales Returns and Allowances
+
+def Sales_returns():
+    total_Revenue = sum(account['_Value'] for account in GL_Extract if account['_Account'] in revenue_Accounts)
+    sales_allowance_value = round(total_Revenue * (-0.02 / 100))
+    entity = random.choice(entities)
+    department = random.choice(departments)
+    year = operating_Year
+    placeholder1 = 'Undefined'
+    placeholder2 = 'Undefined'
+    placeholder3 = 'Undefined'
+    placeholder4 = 'Undefined'
+    measure = 'Value'
+    currency = 'Local'
+    scenario = 'Actual'
+
+    for periods in operating_periods:
+        sales_allowance_entry = {
+            '_Account': SRDRevenue_Account if isinstance(SRDRevenue_Account, int) else random.choice(SRDRevenue_Account),
+            '_Entity': entity,
+            '_Department': department,
+            '_Placeholder 1': placeholder1,
+            '_Placeholder 2': placeholder2,
+            '_Placeholder 3': placeholder3,
+            '_Placeholder 4': placeholder4,
+            '_Year': year,
+            '_Period': periods,
+            '_Scenario': scenario,
+            '_Currency': currency,
+            '_Measure': measure,
+            '_Value': sales_allowance_value
+        }
+
+        GL_Extract.append(sales_allowance_entry)
+
+Sales_returns()
+
+# Calculate Net income
+
+# Calculate Net Income for a specific period
+def calculate_net_income():
+    net_income = sum(account['_Value'] for account in GL_Extract if account['_Account'] in revenue_Accounts) - \
+                 sum(account['_Value'] for account in GL_Extract if account['_Account'] in opex_Accounts) - \
+                 sum(account['_Value'] for account in GL_Extract if account['_Account'] in other_Accounts) - \
+                 sum(account['_Value'] for account in GL_Extract if account['_Account'] in tax_Accounts) - \
+                 sum(account['_Value'] for account in GL_Extract if account['_Account'] in retained_earnings_accounts)
+    return net_income
+
+# Update Retained Earnings
+def update_retained_earnings(net_income):
+    entity = random.choice(entities)
+    year = operating_Year
+    measure = 'Value'
+    currency = 'Local'
+    scenario = 'Actual'
+    periods = random.choice(operating_periods)
+    retained_earnings_entry = {
+        '_Account': retained_earnings_accounts[0],
+        '_Entity': entity,
+        '_Department': 'Undefined',
+        '_Placeholder 1': 'Undefined',
+        '_Placeholder 2': 'Undefined',
+        '_Placeholder 3': 'Undefined',
+        '_Placeholder 4': 'Undefined',
+        '_Year': year,
+        '_Period': periods,
+        '_Scenario': scenario,
+        '_Currency': currency,
+        '_Measure': measure,
+        '_Value': net_income
+    }
+    GL_Extract.append(retained_earnings_entry)
+
+# Calculate Net Income
+net_income = calculate_net_income()
+
+# Update Retained Earnings with the calculated net income
+update_retained_earnings(net_income)
+
+# Continue with the rest of your script, adding balance sheet and other transactions
+
+
+#Net_Income_Calc()
+
+#create the GL extract into a CSV
+
+gl_df = pd.DataFrame(GL_Extract)
+
+gl_df.to_csv(download_Location + '/' + csv_filename, index=False)
