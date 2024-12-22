@@ -14,7 +14,7 @@ rev_rows = round(row_Num * rev_Split,0)
 cogs_Rows = round(row_Num * cogs_Split,0)
 opex_Rows = round(row_Num * opex_split,0)
 operating_Year = 2023  # Change the operating year
-download_Location = 'C:/Users/haroo/OneDrive/Documents/Price Scraping Project/Sample GL Extracts'  # change location if needed
+download_Location = 'C:/YourFilePath'  # change location if needed
 csv_filename =f"{operating_Year} Sample GL_Exract"
 
 GL_Extract =[]
